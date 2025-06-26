@@ -4,7 +4,7 @@ HybridCacheSystem is a modular and efficient caching framework written in modern
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 include/
@@ -18,19 +18,24 @@ src/
 │   LRUCache.cpp         # Implementation of LRU cache
 │   MultiLevelQueue.cpp  # Implementation of multi-level queue
 │   main.cpp             # Entry point with interactive demo
+tests/
+│   test_lru.cpp         # Example unit test for LRUCache
+.github/
+│   workflows/
+│       ci.yml           # GitHub Actions workflow for CI/CD
 ```
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
-### 1. Prerequisites
+### Prerequisites
 
 - C++17 compatible compiler (e.g., g++ 7+, clang 6+, MSVC 2017+)
 - CMake 3.10 or newer (for recommended build)
 - Standard C++ STL (no external dependencies)
 
-### 2. Build Instructions
+### Build Instructions
 
 ```bash
 git clone https://github.com/zennyMe17/HybridCacheSystem.git
@@ -44,7 +49,25 @@ This will generate an executable (typically HybridCacheSystem or main) in the bu
 
 ---
 
-## 🛠️ How It Works
+## Automation & Continuous Integration
+
+This project uses GitHub Actions for automatic building and testing.  
+Every push and pull request to `main` or `master` will trigger an automated build and run the unit tests.
+
+- The workflow checks out your code, installs dependencies, configures with CMake, builds, and runs all unit tests with CTest.
+- To add more tests, simply add `.cpp` test files in the `tests/` directory and update `CMakeLists.txt` accordingly.
+
+**Workflow badge:**
+
+```markdown
+![CI](https://github.com/zennyMe17/HybridCacheSystem/actions/workflows/ci.yml/badge.svg)
+```
+
+You can find the workflow file at `.github/workflows/ci.yml`.
+
+---
+
+## How It Works
 
 HybridCacheSystem allows you to:
 
@@ -54,88 +77,21 @@ HybridCacheSystem allows you to:
 
 ### Main Components
 
-#### 1. LRUCache
-- Evicts the least recently accessed items first.
-- Good for workloads where recent access is a strong predictor of future use.
+**LRUCache**  
+Evicts the least recently accessed items first. Useful for workloads where recent access is a strong predictor of future use.
 
-#### 2. LFUCache
-- Evicts the least frequently accessed items.
-- Ideal for workloads with frequently repeating keys.
+**LFUCache**  
+Evicts the least frequently accessed items. Ideal for workloads with frequently repeating keys.
 
-#### 3. MultiLevelQueue
-- Supports multi-tier caching (for example, combining RAM and SSD, or different cache policies).
-- Can be configured to cascade evictions across levels.
+**MultiLevelQueue**  
+Supports multi-tier caching (e.g., combining RAM and SSD, or different cache policies). Can be configured to cascade evictions across levels.
 
-#### 4. CacheManager
-- Unified entry point for cache operations.
-- Can be configured to use any combination of the above caches.
-- Handles cache lookup, insertion, eviction, and statistics.
+**CacheManager**  
+Unified entry point for cache operations. Can be configured to use any combination of the above caches. Handles cache lookup, insertion, eviction, and statistics.
 
 ---
 
-## 🕹️ Interactive Demo
-
-Run the demo executable:
-
-```bash
-./HybridCacheSystem
-```
-
-Example interactive session:
-
-```
-> set foo 123
-OK
-> get foo
-123
-> set bar 456
-OK
-> stats
-{"LRU_items": 1, "LFU_items": 1, ...}
-> del foo
-OK
-> get foo
-NOT FOUND
-> exit
-```
-
----
-
-## 🧑‍💻 Example Usage in C++
-
-```cpp
-#include "CacheManager.h"
-
-int main() {
-    // Create a cache manager with a total size of 100 items
-    CacheManager manager(100);
-
-    // Add some items
-    manager.set("alpha", 10);
-    manager.set("beta", 20);
-
-    // Retrieve items
-    int value = manager.get("alpha"); // returns 10
-
-    // Remove an item
-    manager.del("beta");
-
-    // Print statistics
-    manager.stats();
-}
-```
-
----
-
-## ⚙️ Customization & Extension
-
-- To change cache policy, instantiate `CacheManager` with different cache objects (see code in `main.cpp`).
-- To add a new policy, create a new cache class (e.g., MRUCache for Most Recently Used), following the structure in `include/LRUCache.h` and `src/LRUCache.cpp`.
-- Plug the new cache into CacheManager for hybrid strategies.
-
----
-
-## 📚 Advanced Topics
+## Advanced Topics
 
 - **Multi-level caching:** Use `MultiLevelQueue` to combine fast (RAM) and slow (disk) caches for maximum efficiency.
 - **Eviction tuning:** Adjust cache sizes and policies to suit your application's data access patterns.
@@ -143,14 +99,7 @@ int main() {
 
 ---
 
-## 🧪 Testing
-
-- The interactive demo (main.cpp) covers common use-cases and edge cases.
-- For unit tests, create test cases for each cache class and simulate various access/eviction patterns.
-
----
-
-## 🤝 Contributing
+## Contributing
 
 - Issues and pull requests are welcome!
 - Please open an issue to discuss bugs or feature requests.
@@ -158,27 +107,4 @@ int main() {
 
 ---
 
-## ❓ FAQ
-
-**Q: What is the main use case for this project?**  
-A: It's a learning resource and starting point for building high-performance caching systems in C++. Use it to power applications that need fast, layered key-value storage, or as a reference for implementing cache algorithms.
-
-**Q: Can I use this in production?**  
-A: This is a reference implementation. For production, ensure you review, test, and extend it as needed (e.g., add thread safety, persistence, advanced metrics).
-
-**Q: How do I switch between LRU and LFU?**  
-A: Change the cache objects passed to CacheManager. See `main.cpp` for examples.
-
----
-
-## 🕹️ Quick Links
-
-- Interactive Demo: `src/main.cpp`
-- LRU Cache: `include/LRUCache.h`, `src/LRUCache.cpp`
-- LFU Cache: `include/LFUCache.h`, `src/LFUCache.cpp`
-- Multi-Level Queue: `include/MultiLevelQueue.h`, `src/MultiLevelQueue.cpp`
-- Cache Manager: `include/CacheManager.h`, `src/CacheManager.cpp`
-
----
-
-Happy caching and learning! 🚀
+Happy caching and learning!
