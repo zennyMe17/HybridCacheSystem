@@ -63,8 +63,6 @@ Every push and pull request to `main` or `master` will trigger an automated buil
 ![CI](https://github.com/zennyMe17/HybridCacheSystem/actions/workflows/ci.yml/badge.svg)
 ```
 
-You can find the workflow file at `.github/workflows/ci.yml`.
-
 ---
 
 ## How It Works
