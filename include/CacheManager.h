@@ -5,23 +5,23 @@
 #include "LRUCache.h"
 #include <atomic>
 #include <mutex>
+#include <string>
 
 class CacheManager {
 public:
-    CacheManager(int capacity);
-    void setPolicy(int policy);
-    void accessCache(int key, int value);
-    // Modified to accept a stop flag
+    CacheManager(size_t capacity);
+    int get(int key);
+    void put(int key, int value);
     void switchPolicy(std::atomic<bool>& stop_flag);
+    std::string getCurrentPolicyName() const;
 
 private:
-    enum { LFU = 0, LRU = 1 };
+    enum Policy { LFU_P, LRU_P };
 
     LFUCache lfu_cache;
     LRUCache lru_cache;
-    std::atomic<int> current_policy;
+    std::atomic<Policy> current_policy;
     std::mutex policy_mutex;
-    std::mutex access_mutex;
 };
 
 #endif // CACHEMANAGER_H
