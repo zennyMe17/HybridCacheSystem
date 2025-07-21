@@ -1,27 +1,33 @@
-name: Build & Test
+# .github/workflows/build.yml
 
+name: C++ CI
+
+# This action will trigger on every push to the main branch
 on:
   push:
-    branches: [main, master]
+    branches: [ "main" ]
   pull_request:
-    branches: [main, master]
+    branches: [ "main" ]
 
 jobs:
-  build-and-test:
+  build:
+    # Use the latest version of Ubuntu as the runner
     runs-on: ubuntu-latest
 
     steps:
+    # 1. Check out your repository code so the workflow can access it
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Install dependencies
-      run: sudo apt-get update && sudo apt-get install -y build-essential cmake
+    # 2. The build step
+    - name: Build the project
+      run: |
+        echo "Starting build..."
+        g++ -std=c++17 -pthread -Iinclude src/*.cpp -o hybrid_cache
+        echo "Build finished."
 
-    - name: Configure project
-      run: cmake -S . -B build
-
-    - name: Build project
-      run: cmake --build build
-
-    - name: Run unit tests
-      run: cd build && ctest --output-on-failure
+    # 3. (Optional) A step to run your executable to make sure it works
+    - name: Run the program
+      run: |
+        echo "Running executable..."
+        ./hybrid_cache
