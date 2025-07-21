@@ -1,14 +1,14 @@
-#ifndef LRUCACHE_H
-#define LRUCACHE_H
+#ifndef LFUCACHE_H
+#define LFUCACHE_H
 
 #include <unordered_map>
 #include <list>
 #include <mutex>
 #include <atomic>
 
-class LRUCache {
+class LFUCache {
 public:
-    LRUCache(size_t capacity);
+    LFUCache(size_t capacity);
     int get(int key);
     void put(int key, int value);
 
@@ -17,12 +17,12 @@ public:
     void resetStats();
 
 private:
-    void moveToFront(int key);
+    void touch(int key);
     void evict();
 
     size_t capacity;
-    std::unordered_map<int, std::pair<int, int>> cache;
-    std::list<int> access_order;
+    std::unordered_map<int, std::pair<int, int>> cache; // key -> {value, frequency}
+    std::unordered_map<int, std::list<int>> freq_map;  // frequency -> list of keys
     std::mutex cache_mutex;
 
     // --- New Stats Counters ---
@@ -30,4 +30,4 @@ private:
     std::atomic<size_t> accesses;
 };
 
-#endif // LRUCACHE_H
+#endif // LFUCACHE_H
