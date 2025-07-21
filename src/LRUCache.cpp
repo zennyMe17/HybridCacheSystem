@@ -56,3 +56,11 @@ void LRUCache::evict() {
     access_order.pop_back();
     cache.erase(key_to_evict);
 }
+
+// Add this function to LRUCache.cpp
+void LRUCache::reset() {
+    std::lock_guard<std::mutex> lock(cache_mutex);
+    cache.clear();
+    access_order.clear();
+    resetStats();
+}
