@@ -71,3 +71,11 @@ void LFUCache::evict() {
         cache.erase(key_to_evict);
     }
 }
+
+// Add this function to LFUCache.cpp
+void LFUCache::reset() {
+    std::lock_guard<std::mutex> lock(cache_mutex);
+    cache.clear();
+    freq_map.clear();
+    resetStats();
+}
