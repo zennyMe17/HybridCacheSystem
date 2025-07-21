@@ -6,68 +6,73 @@
 #include <vector>
 #include <random>
 
-// --- New Workload Simulations ---
-
-// Workload where recent items are accessed frequently (good for LRU)
-void simulateRecencyWorkload(CacheManager& manager, int items, int accesses) {
-    std::cout << "\n>>> Starting Recency-Biased Workload (LRU should be better) <<<\n" << std::endl;
-    for (int i = 0; i < accesses; ++i) {
-        int key = i % items;
-        manager.put(key, key * 10);
-        manager.get(key);
-        std::this_thread::sleep_for(std::chrono::milliseconds(20));
-    }
-}
-
-// Workload where a few items are accessed very frequently (good for LFU)
-void simulateFrequencyWorkload(CacheManager& manager, int capacity, int accesses) {
-    std::cout << "\n>>> Starting Frequency-Biased Workload (LFU should be better) <<<\n" << std::endl;
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    // Popular keys are in the range [0, capacity/2)
-    // Unpopular keys are in the range [capacity, capacity*5)
-    std::uniform_int_distribution<> popular_dist(0, capacity / 2);
-    std::uniform_int_distribution<> unpopular_dist(capacity, capacity * 5);
-    
-    for (int i = 0; i < accesses; ++i) {
-        int key;
-        // 80% of accesses go to popular keys
-        if (i % 5 < 4) { 
-            key = popular_dist(gen);
-        } else {
-            key = unpopular_dist(gen);
-        }
-        manager.put(key, key * 10);
-        manager.get(key);
-        std::this_thread::sleep_for(std::chrono::milliseconds(20));
-    }
-}
-
-
 int main(int argc, char* argv[]) {
     if (argc < 2) {
         std::cerr << "Usage: " << argv[0] << " <cache_capacity>" << std::endl;
         return 1;
     }
     size_t capacity = std::stoull(argv[1]);
+    if (capacity == 0) {
+        std::cerr << "Capacity must be greater than 0." << std::endl;
+        return 1;
+    }
 
     CacheManager manager(capacity);
     std::atomic<bool> stop_flag(false);
 
+    // Start the background thread that will check and switch policies
     std::thread policyManagerThread(&CacheManager::switchPolicy, &manager, std::ref(stop_flag));
 
-    // Run workload that favors LRU
-    simulateRecencyWorkload(manager, capacity + 5, 200);
+    std::cout << "--- Starting Simulation ---" << std::endl;
+    std::cout << "Initial Policy: " << manager.getCurrentPolicyName() << std::endl;
+    std::cout << "---------------------------\n" << std::endl;
     
-    // Give time for policy check
+    // =================================================================
+    // PHASE 1: LRU-biased Workload
+    // Access a sequence of unique items. LRU excels because it remembers recent items.
+    // LFU will struggle as every item has a frequency of 1.
+    // =================================================================
+    std::cout << ">>> PHASE 1: Running LRU-Biased Workload (Sequential Access)... <<<\n" << std::endl;
+    // Load more items than the cache can hold to force evictions
+    for (int i = 0; i < capacity + 5; ++i) {
+        manager.put(i, i * 10);
+    }
+    // Now, access the MOST RECENT items. LRU should have kept them.
+    for (int i = 5; i < capacity + 5; ++i) {
+        manager.get(i);
+    }
+
+    // Wait for the policy manager to run and evaluate
     std::this_thread::sleep_for(std::chrono::seconds(6));
 
-    // Run workload that favors LFU
-    simulateFrequencyWorkload(manager, capacity, 200);
 
-    // Let it run a bit longer to see the final switch
+    // =================================================================
+    // PHASE 2: LFU-biased Workload
+    // Access a few "popular" items many times, and some "unpopular" items once.
+    // LFU will keep the popular items. LRU will get tricked into evicting
+    // them when an unpopular item is accessed more recently.
+    // =================================================================
+    std::cout << "\n>>> PHASE 2: Running LFU-Biased Workload (Popular Items Access)... <<<\n" << std::endl;
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> unpopular_dist(capacity * 2, capacity * 10);
+
+    // Access 3 "popular" keys 20 times each
+    for (int i = 0; i < 20; ++i) {
+        manager.get(0);
+        manager.get(1);
+        manager.get(2);
+        // Occasionally access a new, "unpopular" item
+        if (i % 4 == 0) {
+            manager.get(unpopular_dist(gen));
+        }
+    }
+
+    // Wait for the policy manager to run and evaluate again
     std::this_thread::sleep_for(std::chrono::seconds(6));
-
+    
+    // --- Shutdown ---
+    std::cout << "\n--- Simulation Complete ---\n" << std::endl;
     stop_flag.store(true);
     policyManagerThread.join();
 
