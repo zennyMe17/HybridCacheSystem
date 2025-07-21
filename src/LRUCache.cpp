@@ -1,47 +1,58 @@
-#include "LFUCache.h"
-#include <iostream>
+#include "LRUCache.h"
+#include <algorithm>
 
-LFUCache::LFUCache(int capacity) : capacity(capacity) {}
+LRUCache::LRUCache(size_t capacity) : capacity(capacity), hits(0), accesses(0) {}
 
-int LFUCache::get(int key) {
+// --- New Methods ---
+double LRUCache::getHitRate() const {
+    if (accesses == 0) return 0.0;
+    return static_cast<double>(hits.load()) / accesses.load();
+}
+
+void LRUCache::resetStats() {
+    hits = 0;
+    accesses = 0;
+}
+// ---
+
+int LRUCache::get(int key) {
     std::lock_guard<std::mutex> lock(cache_mutex);
-    if (cache.find(key) == cache.end()) return -1;
+    accesses++; // Track every access
 
-    touch(key);
+    if (cache.find(key) == cache.end()) {
+        return -1; // Miss
+    }
+
+    hits++; // Track hit
+    moveToFront(key);
     return cache[key].first;
 }
 
-void LFUCache::put(int key, int value) {
+void LRUCache::put(int key, int value) {
     std::lock_guard<std::mutex> lock(cache_mutex);
-    
     if (capacity == 0) return;
 
     if (cache.find(key) != cache.end()) {
         cache[key].first = value;
-        touch(key);
+        moveToFront(key);
     } else {
         if (cache.size() >= capacity) {
             evict();
         }
-        cache[key] = {value, 1};
-        freq_map[1].push_front(key);
+        cache[key] = {value, 0};
+        access_order.push_front(key);
     }
 }
 
-void LFUCache::touch(int key) {
-    int old_freq = cache[key].second;
-    cache[key].second++;
-    freq_map[old_freq].remove(key);
-    freq_map[cache[key].second].push_front(key);
+// Unchanged private helpers...
+void LRUCache::moveToFront(int key) {
+    access_order.remove(key);
+    access_order.push_front(key);
 }
 
-void LFUCache::evict() {
-    for (auto& item : freq_map) {
-        if (!item.second.empty()) {
-            int key_to_evict = item.second.back();
-            item.second.pop_back();
-            cache.erase(key_to_evict);
-            break;
-        }
-    }
+void LRUCache::evict() {
+    if (access_order.empty()) return;
+    int key_to_evict = access_order.back();
+    access_order.pop_back();
+    cache.erase(key_to_evict);
 }
