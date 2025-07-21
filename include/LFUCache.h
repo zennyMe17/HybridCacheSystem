@@ -11,6 +11,8 @@ public:
     LFUCache(size_t capacity);
     int get(int key);
     void put(int key, int value);
+    // Add this line in both LRUCache.h and LFUCache.h
+    void reset();
 
     // --- New Methods for Stats ---
     double getHitRate() const;
@@ -19,8 +21,7 @@ public:
 private:
     void touch(int key);
     void evict();
-    // Add this line in both LRUCache.h and LFUCache.h
-    void reset();
+    
 
     size_t capacity;
     std::unordered_map<int, std::pair<int, int>> cache; // key -> {value, frequency}
