@@ -15,6 +15,8 @@ public:
     // --- New Methods for Stats ---
     double getHitRate() const;
     void resetStats();
+    // Add this line in both LRUCache.h and LFUCache.h
+    void reset();
 
 private:
     void moveToFront(int key);
