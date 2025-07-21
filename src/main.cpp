@@ -4,7 +4,10 @@
 #include <atomic>
 #include <chrono>
 #include <vector>
-#include <random>
+
+void separator() {
+    std::cout << "\n=======================================================\n" << std::endl;
+}
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
@@ -12,67 +15,67 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     size_t capacity = std::stoull(argv[1]);
-    if (capacity == 0) {
-        std::cerr << "Capacity must be greater than 0." << std::endl;
+    if (capacity < 5) { // The simulation needs a capacity of at least 5 to work well
+        std::cerr << "Please use a capacity of 5 or greater for this simulation." << std::endl;
         return 1;
     }
 
     CacheManager manager(capacity);
     std::atomic<bool> stop_flag(false);
 
-    // Start the background thread that will check and switch policies
     std::thread policyManagerThread(&CacheManager::switchPolicy, &manager, std::ref(stop_flag));
 
-    std::cout << "--- Starting Simulation ---" << std::endl;
-    std::cout << "Initial Policy: " << manager.getCurrentPolicyName() << std::endl;
-    std::cout << "---------------------------\n" << std::endl;
+    separator();
+    std::cout << ">>> PHASE 1: Proving LFU is better <<<" << std::endl;
+    std::cout << "Workload: Accessing a few popular items repeatedly." << std::endl;
+    separator();
     
-    // =================================================================
-    // PHASE 1: LRU-biased Workload
-    // Access a sequence of unique items. LRU excels because it remembers recent items.
-    // LFU will struggle as every item has a frequency of 1.
-    // =================================================================
-    std::cout << ">>> PHASE 1: Running LRU-Biased Workload (Sequential Access)... <<<\n" << std::endl;
-    // Load more items than the cache can hold to force evictions
-    for (int i = 0; i < capacity + 5; ++i) {
-        manager.put(i, i * 10);
-    }
-    // Now, access the MOST RECENT items. LRU should have kept them.
-    for (int i = 5; i < capacity + 5; ++i) {
-        manager.get(i);
+    // Step 1: Access popular items (0, 1, 2) multiple times to increase their frequency
+    for(int i = 0; i < 10; ++i) {
+        manager.put(0, 0); 
+        manager.put(1, 10);
+        manager.put(2, 20);
     }
 
-    // Wait for the policy manager to run and evaluate
-    std::this_thread::sleep_for(std::chrono::seconds(6));
-
-
-    // =================================================================
-    // PHASE 2: LFU-biased Workload
-    // Access a few "popular" items many times, and some "unpopular" items once.
-    // LFU will keep the popular items. LRU will get tricked into evicting
-    // them when an unpopular item is accessed more recently.
-    // =================================================================
-    std::cout << "\n>>> PHASE 2: Running LFU-Biased Workload (Popular Items Access)... <<<\n" << std::endl;
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> unpopular_dist(capacity * 2, capacity * 10);
-
-    // Access 3 "popular" keys 20 times each
-    for (int i = 0; i < 20; ++i) {
-        manager.get(0);
-        manager.get(1);
-        manager.get(2);
-        // Occasionally access a new, "unpopular" item
-        if (i % 4 == 0) {
-            manager.get(unpopular_dist(gen));
-        }
+    // Step 2: Access a series of unique, one-off items to flush out an LRU cache
+    for(int i = 0; i < capacity; ++i) {
+        manager.put(100 + i, 1000 + i*10);
     }
-
-    // Wait for the policy manager to run and evaluate again
+    
+    // Step 3: Now, try to access the popular items again
+    std::cout << "Verifying... trying to access popular items (0, 1, 2)." << std::endl;
+    manager.get(0); // LFU should HIT, LRU should MISS
+    manager.get(1); // LFU should HIT, LRU should MISS
+    manager.get(2); // LFU should HIT, LRU should MISS
+    
+    // Wait for the policy manager to run and see the performance difference
     std::this_thread::sleep_for(std::chrono::seconds(6));
     
+    // Reset for the next phase
+    manager.reset();
+
+    separator();
+    std::cout << ">>> PHASE 2: Proving LRU is better <<<" << std::endl;
+    std::cout << "Workload: A long, sequential scan of unique items." << std::endl;
+    separator();
+    
+    // Step 1: Fill the cache with unique items
+    for(int i = 0; i < capacity; ++i) {
+        manager.put(i, i*10);
+    }
+    
+    // Step 2: Access the most recent half of those items again
+    std::cout << "Verifying... trying to access most recent items." << std::endl;
+    for(int i = capacity / 2; i < capacity; ++i) {
+        manager.get(i); // LRU should HIT, LFU performance will depend on its eviction choices
+    }
+
+    // Wait for the policy manager to run again
+    std::this_thread::sleep_for(std::chrono::seconds(6));
+
     // --- Shutdown ---
-    std::cout << "\n--- Simulation Complete ---\n" << std::endl;
+    separator();
+    std::cout << "--- Simulation Complete ---" << std::endl;
     stop_flag.store(true);
     policyManagerThread.join();
 
