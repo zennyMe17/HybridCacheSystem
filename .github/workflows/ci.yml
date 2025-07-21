@@ -2,7 +2,6 @@
 
 name: C++ CI
 
-# This action will trigger on every push to the main branch
 on:
   push:
     branches: [ "main" ]
@@ -11,23 +10,25 @@ on:
 
 jobs:
   build:
-    # Use the latest version of Ubuntu as the runner
     runs-on: ubuntu-latest
 
     steps:
-    # 1. Check out your repository code so the workflow can access it
+    # 1. Check out your repository code
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # 2. The build step
-    - name: Build the project
-      run: |
-        echo "Starting build..."
-        g++ -std=c++17 -pthread -Iinclude src/*.cpp -o hybrid_cache
-        echo "Build finished."
+    # 2. Cache the 'obj' directory (Optional but recommended)
+    - name: Cache build objects
+      id: cache-objects
+      uses: actions/cache@v4
+      with:
+        path: obj
+        key: ${{ runner.os }}-build-${{ hashFiles('**/Makefile', '**/src/*.cpp', '**/include/*.h') }}
 
-    # 3. (Optional) A step to run your executable to make sure it works
+    # 3. Build the project using the Makefile
+    - name: Build with make
+      run: make
+
+    # 4. Run the program with a capacity argument
     - name: Run the program
-      run: |
-        echo "Running executable..."
-        ./hybrid_cache
+      run: ./bin/hybrid_cache 10 # <-- THE FIX IS HERE
