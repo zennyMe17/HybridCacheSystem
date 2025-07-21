@@ -66,3 +66,10 @@ void CacheManager::switchPolicy(std::atomic<bool>& stop_flag) {
         std::cout << "--------------------\n" << std::endl;
     }
 }
+// Add this function to CacheManager.cpp
+void CacheManager::reset() {
+    std::lock_guard<std::mutex> lock(policy_mutex);
+    lru_cache.reset();
+    lfu_cache.reset();
+    std::cout << "\n... Caches and Stats Reset ...\n" << std::endl;
+}
