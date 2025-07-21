@@ -11,14 +11,15 @@ public:
     CacheManager(int capacity);
     void setPolicy(int policy);
     void accessCache(int key, int value);
-    void switchPolicy();
+    // Modified to accept a stop flag
+    void switchPolicy(std::atomic<bool>& stop_flag);
 
 private:
     enum { LFU = 0, LRU = 1 };
 
     LFUCache lfu_cache;
     LRUCache lru_cache;
-    std::atomic<int> current_policy;  // Use atomic for thread safety
+    std::atomic<int> current_policy;
     std::mutex policy_mutex;
     std::mutex access_mutex;
 };
