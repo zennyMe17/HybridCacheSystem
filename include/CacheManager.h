@@ -14,6 +14,7 @@ public:
     void put(int key, int value);
     void switchPolicy(std::atomic<bool>& stop_flag);
     std::string getCurrentPolicyName() const;
+    void reset();
 
 private:
     enum Policy { LFU_P, LRU_P };
